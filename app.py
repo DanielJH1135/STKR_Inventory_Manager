@@ -49,7 +49,7 @@ if 'inventory_df' not in st.session_state:
         {
             "대분류": "BLT", 
             "표면처리": "Roxolid SLActive", 
-            "사이즈": "4.1", 
+            "사이즈": "4110", 
             "유효기간": date.today() + timedelta(days=600)
         }
     ])
@@ -135,3 +135,4 @@ with col_btn:
                     )
                 except Exception as e:
                     st.error(f"PDF 생성 중 오류 발생: {e}")
+
