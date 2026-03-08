@@ -43,18 +43,19 @@ st.set_page_config(page_title="Straumann Stock Manager", layout="wide")
 st.title("🦷 스트라우만 재고 및 유효기간 관리")
 st.write("제품 정보를 입력한 후 우측 하단의 '발행' 버튼을 눌러주세요.")
 
-# 데이터 세션 상태 관리
+# 데이터 세션 상태 관리 (✨ 수량 1개 기본값 추가)
 if 'inventory_df' not in st.session_state:
     st.session_state.inventory_df = pd.DataFrame([
         {
             "대분류": "BLT", 
             "표면처리": "Roxolid SLActive", 
             "사이즈": "4110", 
+            "수량": 1, 
             "유효기간": date.today() + timedelta(days=600)
         }
     ])
 
-# 연도 4자리 고정 (min/max_value 제한)
+# 연도 4자리 고정 (min/max_value 제한 및 ✨ 수량 컬럼 추가)
 edited_df = st.data_editor(
     st.session_state.inventory_df,
     num_rows="dynamic",
@@ -62,6 +63,7 @@ edited_df = st.data_editor(
         "대분류": st.column_config.SelectboxColumn("대분류", options=["BL", "BLT", "BLX", "TL", "TLX"], required=True),
         "표면처리": st.column_config.SelectboxColumn("표면처리", options=["Ti-SLA", "Roxolid SLA", "Roxolid SLActive"], required=True),
         "사이즈": st.column_config.TextColumn("사이즈"),
+        "수량": st.column_config.NumberColumn("수량", min_value=1, step=1, default=1),
         "유효기간": st.column_config.DateColumn(
             "유효기간", 
             format="YYYY-MM-DD",
@@ -93,15 +95,15 @@ with col_btn:
                         pdf.add_font('Nanum', '', "NanumGothic.ttf")
                         pdf.set_font('Nanum', '', 11)
                     
-                    # 테이블 헤더
+                    # 테이블 헤더 (✨ 수량 컬럼 너비 20 추가)
                     pdf.set_fill_color(240, 240, 240)
-                    w = [30, 60, 30, 65]
-                    headers = ["대분류", "표면처리", "사이즈", "유효기간"]
+                    w = [25, 60, 25, 20, 55] 
+                    headers = ["대분류", "표면처리", "사이즈", "수량", "유효기간"]
                     for i, h in enumerate(headers):
                         pdf.cell(w[i], 12, h, 1, 0, 'C', fill=True)
                     pdf.ln()
 
-                    # 데이터 출력 (1년 6개월 미만 빨간색 강조)
+                    # 데이터 출력 (1년 6개월 미만 빨간색 강조 및 ✨ 수량 데이터 연결)
                     limit_date = date.today() + timedelta(days=547)
                     for _, row in edited_df.iterrows():
                         if row['유효기간'] < limit_date:
@@ -112,11 +114,12 @@ with col_btn:
                         pdf.cell(w[0], 10, str(row['대분류']), 1, 0, 'C')
                         pdf.cell(w[1], 10, str(row['표면처리']), 1, 0, 'C')
                         pdf.cell(w[2], 10, str(row['사이즈']), 1, 0, 'C')
-                        pdf.cell(w[3], 10, row['유효기간'].strftime('%Y-%m-%d'), 1, 1, 'C')
+                        pdf.cell(w[3], 10, str(row['수량']), 1, 0, 'C') # 수량 출력
+                        pdf.cell(w[4], 10, row['유효기간'].strftime('%Y-%m-%d'), 1, 1, 'C')
 
-                    # 3. 하단 문구 수정 (색상 블랙, 문구 추가)
+                    # 3. 하단 문구 수정
                     pdf.ln(10)
-                    pdf.set_text_color(0, 0, 0) # 텍스트 색상 검정
+                    pdf.set_text_color(0, 0, 0) 
                     if os.path.exists("NanumGothic.ttf"):
                         pdf.set_font('Nanum', '', 10)
                     
@@ -135,4 +138,3 @@ with col_btn:
                     )
                 except Exception as e:
                     st.error(f"PDF 생성 중 오류 발생: {e}")
-
