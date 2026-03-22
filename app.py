@@ -103,19 +103,38 @@ with col_btn:
                         pdf.cell(w[i], 12, h, 1, 0, 'C', fill=True)
                     pdf.ln()
 
-                    # 데이터 출력 (1년 6개월 미만 빨간색 강조 및 ✨ 수량 데이터 연결)
-                    limit_date = date.today() + timedelta(days=547)
+                    # 데이터 출력 (1년 미만 삭선 및 회색, 1년 6개월 미만 빨간색 강조)
+                    limit_date_1_5 = date.today() + timedelta(days=547)
+                    limit_date_1_0 = date.today() + timedelta(days=365)
+
                     for _, row in edited_df.iterrows():
-                        if row['유효기간'] < limit_date:
-                            pdf.set_text_color(220, 50, 50)
+                        is_under_1_year = row['유효기간'] < limit_date_1_0
+                        is_under_1_5_years = row['유효기간'] < limit_date_1_5
+
+                        # 텍스트 색상 분기 처리
+                        if is_under_1_year:
+                            pdf.set_text_color(150, 150, 150) # 1년 미만: 회색 텍스트
+                        elif is_under_1_5_years:
+                            pdf.set_text_color(220, 50, 50) # 1.5년 미만: 기존 붉은색
                         else:
-                            pdf.set_text_color(0, 0, 0)
+                            pdf.set_text_color(0, 0, 0) # 정상: 검은색
                         
+                        # 삭선을 긋기 위해 현재 위치 좌표(x, y) 저장
+                        start_x = pdf.get_x()
+                        start_y = pdf.get_y()
+
                         pdf.cell(w[0], 10, str(row['대분류']), 1, 0, 'C')
                         pdf.cell(w[1], 10, str(row['표면처리']), 1, 0, 'C')
                         pdf.cell(w[2], 10, str(row['사이즈']), 1, 0, 'C')
-                        pdf.cell(w[3], 10, str(row['수량']), 1, 0, 'C') # 수량 출력
+                        pdf.cell(w[3], 10, str(row['수량']), 1, 0, 'C') 
                         pdf.cell(w[4], 10, row['유효기간'].strftime('%Y-%m-%d'), 1, 1, 'C')
+
+                        # 1년 미만일 경우 가로로 붉은색 삭선 긋기
+                        if is_under_1_year:
+                            pdf.set_draw_color(220, 50, 50) # 삭선 색상 (붉은색)
+                            # 셀의 중간 높이(start_y + 5)에 맞춰 전체 너비(sum(w))만큼 선 그리기
+                            pdf.line(start_x, start_y + 5, start_x + sum(w), start_y + 5)
+                            pdf.set_draw_color(0, 0, 0) # 테두리를 위해 다시 검은색으로 복구
 
                     # 3. 하단 문구 수정
                     pdf.ln(10)
@@ -123,7 +142,8 @@ with col_btn:
                     if os.path.exists("NanumGothic.ttf"):
                         pdf.set_font('Nanum', '', 10)
                     
-                    pdf.cell(0, 8, "※ 유효기간 1년 미만 제품은 교환이 불가합니다.", ln=True)
+                    # 삭선에 대한 안내 문구 추가 반영
+                    pdf.cell(0, 8, "※ 유효기간 1년 미만 제품(회색 텍스트 및 붉은색 취소선)은 교환이 불가합니다.", ln=True)
                     pdf.cell(0, 8, "※ 표에서 붉은색으로 표기된 제품은 유효기간 1년 6개월 미만 제품입니다.", ln=True)
 
                     # PDF 다운로드
